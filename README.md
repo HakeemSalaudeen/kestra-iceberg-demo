@@ -1,5 +1,3 @@
-
-
 # Apache Iceberg Walkthrough on AWS
 
 ## Project Overview
@@ -32,47 +30,36 @@ s3://bucket-name/table-path/
 
 #### Iceberg Table Creation
 ```sql
-CREATE TABLE demo_iceberg_table (
-    id INT,
-    name STRING,
-    email STRING,
-    created_at TIMESTAMP
+CREATE TABLE fruits (
+    id bigint,
+    fruit string,
+    berry boolean,
+    update_timestamp timestamp
 )
-USING iceberg
-PARTITIONED BY (created_at)
-LOCATION 's3://my-bucket/iceberg-tables/demo';
+    PARTITIONED BY (berry)
+LOCATION 's3://kestra-iceberg-demo/fruits/' 
+TBLPROPERTIES ('table_type'='ICEBERG');
 ```
 
 ### 4. Data Manipulation Techniques
 
 #### Bulk Data Ingestion
-```python
-import pandas as pd
-import awswrangler as wr
+- [Bulk Data Ingestion](https://github.com/HakeemSalaudeen/kestra-iceberg-demo/blob/d63fd042d4a7784e0e67346fae69975df3de4d9a/kestra-iceberg-demo.py)
 
-# Read CSV file
-df = pd.read_csv('data.csv')
-
-# Insert into temporary table
-wr.athena.to_dataframe(
-    sql="INSERT INTO temp_table SELECT * FROM pandas_dataframe",
-    database='my_database'
-)
-```
 
 #### Update Operations
 ```sql
 -- Update specific rows
-UPDATE demo_iceberg_table
-SET email = 'new_email@example.com'
-WHERE id = 123;
+UPDATE fruits 
+SET fruit = 'Bilberry' 
+WHERE fruit = 'Blueberry';
 ```
 
 #### Delete Operations
 ```sql
 -- Delete specific rows
-DELETE FROM demo_iceberg_table
-WHERE created_at < DATE '2023-01-01';
+DELETE FROM fruits 
+WHERE fruit = 'Banana';
 ```
 
 ### 5. Time Travel Capabilities
@@ -80,12 +67,15 @@ WHERE created_at < DATE '2023-01-01';
 #### Query Historical Data
 ```sql
 -- View data as it was at a specific timestamp
-SELECT * FROM demo_iceberg_table
-TIMESTAMP AS OF '2023-06-14 12:00:00';
+SELECT * 
+FROM fruits 
+FOR TIMESTAMP AS OF (current_timestamp - interval '50' minute) 
+WHERE berry = true;
 
 -- View data at a specific snapshot
-SELECT * FROM demo_iceberg_table
-VERSION AS OF 123456;
+SELECT * 
+FROM fruits 
+FOR VERSION AS OF 4111858955684891680;
 ```
 
 ### 6. Performance Optimization
@@ -107,12 +97,6 @@ VERSION AS OF 123456;
 - Amazon Athena
 - Pandas
 - AWS Wrangler
-- Apache Spark (optional)
-
-## Challenges Encountered
-- Initial IAM permission setup
-- Understanding Iceberg metadata structure
-- Configuring correct S3 permissions
 
 ## Learnings
 - Immutable table format benefits
@@ -120,30 +104,11 @@ VERSION AS OF 123456;
 - Time travel and version control
 - Simplified data lake operations
 
-## Recommended Next Steps
-- Implement CDC (Change Data Capture)
-- Explore advanced partitioning
-- Integrate with streaming sources
-
 ## References
+- [Kestra Iceberg Guide](https://kestra.io/blogs/2023-08-05-iceberg-for-aws-users)
 - [Apache Iceberg Documentation](https://iceberg.apache.org/)
 - [AWS Glue Catalog](https://docs.aws.amazon.com/glue/latest/dg/populate-data-catalog.html)
 
-## License
-MIT License
-```
-
-### Recommendations for Improvement
-1. Add actual screenshots of your implementation
-2. Include specific code snippets from your walkthrough
-3. Highlight personal insights and challenges
-
-### Potential Enhancements
-- Add architecture diagram
-- Include performance metrics
-- Discuss specific use cases
-
-Would you like me to modify or elaborate on any section of the README?
 
 
 
