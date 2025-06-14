@@ -3,7 +3,7 @@ import awswrangler as wr
 from kestra import Kestra
 
 
-INGEST_S3_KEY_PATH = "s3://kestra-iceberg-demo/fruits/inbox/"
+INGEST_S3_KEY_PATH = "s3://kestra-iceberg-demo/inbox/"
 
 if len(sys.argv) > 1:
     INGEST_S3_KEY_PATH = sys.argv[1]
@@ -19,8 +19,28 @@ TABLE = "raw_fruits"
 S3_PATH = f"s3://{BUCKET_NAME}/{TABLE}"
 S3_PATH_TMP = f"{S3_PATH}_tmp"
 
+# MERGE_QUERY = """
+# MERGE INTO fruits f USING raw_fruits r
+#     ON f.fruit = r.fruit
+#     WHEN MATCHED
+#         THEN UPDATE
+#             SET id = r.id, berry = r.berry, update_timestamp = current_timestamp
+#     WHEN NOT MATCHED
+#         THEN INSERT (id, fruit, berry, update_timestamp)
+#               VALUES(r.id, r.fruit, r.berry, current_timestamp);
+# """
+
 MERGE_QUERY = """
-MERGE INTO fruits f USING raw_fruits r
+MERGE INTO fruits f USING (
+    SELECT *
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY fruit ORDER BY id DESC) AS rn
+        FROM raw_fruits
+    ) t
+    WHERE rn = 1
+) r
     ON f.fruit = r.fruit
     WHEN MATCHED
         THEN UPDATE
